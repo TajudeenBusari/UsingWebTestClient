@@ -1,3 +1,22 @@
+server:
+  port: 2000
 spring:
   application:
     name: CheckingOutRestTestClient
+todo:
+  items: #varuable name in the config class
+  - id: 1
+    title: Learn C#
+    completed: false
+  - id: 2
+    title: Learn python
+    completed: true
+  - id: 3
+    title: Learn java
+    completed: true
+  - id:
+    title: Learn C++
+    completed: false
+api:
+  endpoint:
+    base-url: api/v1/todo

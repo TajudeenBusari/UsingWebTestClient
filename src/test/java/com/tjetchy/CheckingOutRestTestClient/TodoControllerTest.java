@@ -1,5 +1,6 @@
 package com.tjetchy.CheckingOutRestTestClient;
 
+import com.tjetchy.CheckingOutRestTestClient.config.TodoPropertiesConfig;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,9 +18,15 @@ class TodoControllerTest {
 
     @BeforeEach
     void setUp() {
+        TodoPropertiesConfig todoPropertiesConfig = new TodoPropertiesConfig();
+        todoPropertiesConfig.setItems(List.of(
+               new Todo(1L, "Learn C#", false),
+                new Todo(2L, "Learn python", true),
+                new Todo(3L, "Learn java", false)
+        ));
         //initialize and bind to RestTestClient to controller
         webTestClient = WebTestClient.bindToController(
-                new TodoController()
+                new TodoController(todoPropertiesConfig)
         ).build();
     }
 
@@ -40,19 +47,19 @@ class TodoControllerTest {
         assertNotNull(todos);
         assertEquals(3, todos.size());
         assertEquals("Learn java", todos.get(2).title());
-        assertTrue(todos.get(2).completed());
+        assertFalse(todos.get(2).completed());
     }
 
     @Test
     void findById() {
         Todo todo = webTestClient.get()
-                .uri("/api/v1/todo/100")
+                .uri("/api/v1/todo/1")
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(new ParameterizedTypeReference<Todo>() {})
                 .returnResult()
                 .getResponseBody();
-        assertEquals(100L, todo.id());
+        assertEquals(1, todo.id());
         assertEquals("Learn C#", todo.title());
         assertFalse(todo.completed());
 
