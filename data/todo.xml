@@ -1,0 +1,17 @@
+<ArrayList>
+  <item>
+    <id>1</id>
+    <title>Learn Go</title>
+    <completed>false</completed>
+  </item>
+  <item>
+    <id>2</id>
+    <title>Learn Java</title>
+    <completed>true</completed>
+  </item>
+  <item>
+    <id>3</id>
+    <title>Learn C++</title>
+    <completed>true</completed>
+  </item>
+</ArrayList>

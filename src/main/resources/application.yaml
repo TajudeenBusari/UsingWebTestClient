@@ -4,19 +4,14 @@ spring:
   application:
     name: CheckingOutRestTestClient
 todo:
-  items: #varuable name in the config class
-  - id: 1
-    title: Learn C#
-    completed: false
-  - id: 2
-    title: Learn python
-    completed: true
-  - id: 3
-    title: Learn java
-    completed: true
-  - id: 4
-    title: Learn C++
-    completed: false
+  file:
+    path: data/todo.json
+    format: json
+#todo:
+#  file:
+#    path: data/todo.xml
+#    format: xml
+
 api:
   endpoint:
     baseurl: /api/v1/todo
