@@ -1,55 +1,48 @@
 package com.tjetchy.CheckingOutRestTestClient;
 
-import com.tjetchy.CheckingOutRestTestClient.config.TodoPropertiesConfig;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Value;
+import org.mockito.Mockito;
+import org.mockito.Mockito.*;
+
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import org.springframework.test.web.servlet.client.RestTestClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
+/**
+ * For the tests (add, remove and update) that lead to state change, in addition to mocking the
+ * loadTodos, saveTodos must also be mocked. It does not really matter if
+ * the return type of the save method return empty (List of Todos can be empty).
+ * Tests only focus on the happy path.
+ */
 class TodoControllerTest {
+
     private WebTestClient webTestClient;
-    //private RestTestClient restTestClient; //used for spring mvc
     private String baseUrl;
+    private TodoService todoService;
+    List<Todo> todos;
 
     @BeforeEach
     void setUp() {
-        TodoPropertiesConfig todoPropertiesConfig = new TodoPropertiesConfig();
-        /**
-         * In the controller class, the List.of() is already wrapped with a mutable ArrayList,
-         * so it is going to work for updating, deleting and adding in this test class
-         */
-        todoPropertiesConfig.setItems(List.of(
-                new Todo(1L, "Learn C#", false),
-                new Todo(2L, "Learn python", true),
-                new Todo(3L, "Learn java", false)
-        ));
-
-        //initialize and bind to RestTestClient to controller
-        /**
-         * because in the test, there is a WebTestClient binding, not a full a spring boot context,
-         * Spring boot property resolution does not occur. @RequestMapping("${api.endpoint.baseurl}")
-         * stays as the literal string "${api.endpoint.baseurl}".
-         * When WebFlux parses it, it interprets ${...} as a path variable pattern.
-         * The . inside ${api.endpoint.baseurl} causes the error: causing:
-         * Char '.' is not allowed in a captured variable name.
-         * The solution is to inject or initialize the base url in the controller class as:
-         * @RequestMapping("${api.endpoint.baseurl:/api/v1/todo}"),
-         * then in test we explicitly write the base url as follows:  baseUrl = "/api/v1/todo";
-         *
-         */
-        webTestClient = WebTestClient.bindToController(
-                new TodoController(todoPropertiesConfig)
-        ).build();
-
+        //Mock the file service so no actual file I/0 happens
+        todoService = Mockito.mock(TodoService.class);
+        TodoController controller = new TodoController(todoService);
+        webTestClient = WebTestClient.bindToController(controller).build();
         baseUrl = "/api/v1/todo";
+        todos = new ArrayList<>();
+        todos.add(new Todo(1L, "Learn C#", false));
+        todos.add(new Todo(2L, "Learn C++", false));
+        todos.add(new Todo(3L, "Learn Python", true));
     }
 
     @AfterEach
@@ -58,6 +51,13 @@ class TodoControllerTest {
 
     @Test
     void findAll() {
+        List<Todo> todoList = new ArrayList<>();
+        todoList.add(new Todo(1L, "Learn C#", false));
+        todoList.add(new Todo(2L, "Learn C++", false));
+        todoList.add(new Todo(3L, "Learn Python", true));
+
+       when(todoService.loadTodos()).thenReturn(Flux.fromIterable(todoList));
+
         List<Todo> todos = webTestClient.get()
                 .uri(baseUrl)
                 .exchange()
@@ -67,12 +67,14 @@ class TodoControllerTest {
                 .getResponseBody();
         assertNotNull(todos);
         assertEquals(3, todos.size());
-        assertEquals("Learn java", todos.get(2).title());
-        assertFalse(todos.get(2).completed());
+        assertEquals("Learn Python", todos.get(2).title());
+        assertTrue(todos.get(2).completed());
     }
 
     @Test
     void findById() {
+        //loads todos first
+        when(todoService.loadTodos()).thenReturn(Flux.fromIterable(todos));
         Todo todo = webTestClient.get()
                 .uri(baseUrl + "/{id}", 1L)
                 .exchange()
@@ -87,7 +89,9 @@ class TodoControllerTest {
 
     @Test
     void addTodo() {
-        Todo todoToAdd = new Todo(7L, "Learn Accounting", true);
+        when(todoService.loadTodos()).thenReturn(Flux.fromIterable(todos));
+        when(todoService.saveTodos(anyList())).thenReturn(Mono.empty());
+        Todo todoToAdd = new Todo(0L, "Learn Accounting", true); //id will be generated automatically
         Todo todo = webTestClient.post()
                 .uri(baseUrl)
                 .bodyValue(todoToAdd)
@@ -96,13 +100,16 @@ class TodoControllerTest {
                 .expectBody(new ParameterizedTypeReference<Todo>(){})
                 .returnResult()
                 .getResponseBody();
-        assertEquals(7L, todo.id());
+        assertNotNull(todo.id());
         assertEquals("Learn Accounting", todo.title());
         assertTrue(todo.completed());
     }
 
+
     @Test
     void updateTodo() {
+        when(todoService.loadTodos()).thenReturn(Flux.fromIterable(todos));
+        when(todoService.saveTodos(anyList())).thenReturn(Mono.empty());
         Todo updatedTodo = new Todo(3L, "Learn java updated", true);
         var todo = webTestClient.put()
                 .uri(baseUrl + "/{id}", 3L)
@@ -118,6 +125,8 @@ class TodoControllerTest {
 
     @Test
     void deleteTodo() {
+        when(todoService.loadTodos()).thenReturn(Flux.fromIterable(todos));
+        when(todoService.saveTodos(anyList())).thenReturn(Mono.empty());
         webTestClient.delete()
                 .uri(baseUrl + "/{id}", 1L)
                 .exchange()
