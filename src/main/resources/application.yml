@@ -1,0 +1,22 @@
+server:
+  port: 2000
+spring:
+  application:
+    name: CheckingOutRestTestClient
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:default}
+  data:
+    mongodb:
+      uri: mongodb://tjtechy:apppass@localhost:27017/todosdb?authSource=todosdb
+api:
+  endpoint:
+    baseurl: /api/v1/todo
+#log level changed to info/warn to reduce noise because when application starts in docker container
+#it also tries to connect to the localhost, which causes a lot of error message.
+logging:
+  level:
+    org.springframework.boot.autoconfigure.mongo: INFO
+    org.springframework.data.mongodb: INFO
+    com.mongodb: WARN
+    org.mongodb.driver: WARN
+
