@@ -1,0 +1,14 @@
+#no mongodb database config is set here because in the test class,
+#we are already using the @ServiceConnection with TestContainers.
+#it uses something like this: mongodb://localhost:52718/test?replicaSet=rs0
+spring:
+  data:
+    mongodb:
+    # intentionally left empty – Testcontainers config will override/set it
+# Test logging
+logging:
+  level:
+    root: INFO
+    com.tjetchy.CheckingOutRestTestClient: DEBUG
+    org.testcontainers: INFO
+    org.mongodb.driver: WARN
